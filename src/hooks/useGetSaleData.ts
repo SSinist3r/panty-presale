@@ -1,23 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useDispatch } from 'react-redux'
 import { useActiveWeb3React } from 'hooks'
 import BigNumber from 'bignumber.js'
-import { AbiItem } from 'web3-utils'
-import { getWeb3NoAccount } from 'utils/web3'
-import presaleABI from 'constants/abis/presale.json'
-
-import Web3 from 'web3'
-
-import { getPresaleContractAddress } from 'utils/addressHelpers'
+import { ChainId } from '@pancakeswap-libs/sdk'
+import { getPresaleContract } from 'utils/contractHelpers'
+import { updateBlockNumber } from 'state/application/actions'
 import { DEFAULT_TOKEN_DECIMAL } from '../constants'
-import { usePresaleContract } from './useContract'
+import useWeb3 from './useWeb3'
+import { AppDispatch } from '../state'
 
-const web3 = getWeb3NoAccount()
-const presaleContract = new web3.eth.Contract(presaleABI as unknown as AbiItem, getPresaleContractAddress())
 
 // Get PANTY amount from the 'tokenAmount' of 'tokenName'
 export const useGetPANTYAmount = (tokenAmount: string, tokenName: string) => {
 
   const [data, setData] = useState<string | undefined>(undefined)
+  const web3 = useWeb3()
+  const presaleContract = getPresaleContract(web3)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,7 +34,7 @@ export const useGetPANTYAmount = (tokenAmount: string, tokenName: string) => {
     }
 
     fetchData()
-  }, [setData, tokenAmount, tokenName])
+  }, [setData, tokenAmount, tokenName, presaleContract])
 
   return data
 }
@@ -45,6 +43,8 @@ export const useGetPANTYAmount = (tokenAmount: string, tokenName: string) => {
 export const useGetTokenAmount = (pantyAmount: string, tokenName: string) => {
 
   const [data, setData] = useState<string | undefined>(undefined)
+  const web3 = useWeb3()
+  const presaleContract = getPresaleContract(web3)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,6 +52,7 @@ export const useGetTokenAmount = (pantyAmount: string, tokenName: string) => {
         const payAmountInDecimal = new BigNumber(pantyAmount || '0').multipliedBy(DEFAULT_TOKEN_DECIMAL).toFixed(0)
         const tokenAmount = await presaleContract.methods.calculateSpendingToken(payAmountInDecimal.toString(), tokenName).call()
         const tokenAmountInBigNumber = new BigNumber(tokenAmount)
+
         if (tokenAmountInBigNumber.isNaN()) {
           setData("0")
         } else {
@@ -63,14 +64,14 @@ export const useGetTokenAmount = (pantyAmount: string, tokenName: string) => {
     }
 
     fetchData()
-  }, [setData, pantyAmount, tokenName])
+  }, [setData, pantyAmount, tokenName, presaleContract])
 
   return data
 }
 
 // Purchase PANTY
 
-const purchaseWithBNB = async (pantyAmount, tokenAmount, account) => {
+const purchaseWithBNB = async (pantyAmount, tokenAmount, account, presaleContract) => {
   return presaleContract.methods.buyWithBNB(pantyAmount)
     .send({ from: account, gas: 200000, value: tokenAmount })
     .on('transactionHash', (tx) => {
@@ -78,7 +79,7 @@ const purchaseWithBNB = async (pantyAmount, tokenAmount, account) => {
     })
 }
 
-const purchaseWithyPANTY = async (pantyAmount, account) => {
+const purchaseWithyPANTY = async (pantyAmount, account, presaleContract) => {
   return presaleContract.methods.buyWithyPANTY(pantyAmount)
     .send({ from: account })
     .on('transactionHash', (tx) => {
@@ -87,24 +88,40 @@ const purchaseWithyPANTY = async (pantyAmount, account) => {
 }
 
 export const usePANTYPurchase = () => {
-  const { account } = useActiveWeb3React()
+  const { account, chainId } = useActiveWeb3React()
+  const dispatch = useDispatch<AppDispatch>()
+
+  const web3 = useWeb3()
+  const presaleContract = getPresaleContract(web3)
 
   const handlePurchase = useCallback(
+
     async (pantyAmount: string, tokenAmount: string, tokenName?: string) => {
       const pantyAmountInDecimal = new BigNumber(pantyAmount || '0').multipliedBy(DEFAULT_TOKEN_DECIMAL).toFixed(0)
       const tokenAmountInDecimal = new BigNumber(tokenAmount || '0').multipliedBy(DEFAULT_TOKEN_DECIMAL).toFixed(0)
 
       if (tokenName === "BNB") {
         try {
-          await purchaseWithBNB(pantyAmountInDecimal, tokenAmountInDecimal, account);
+          const txHash = await purchaseWithBNB(pantyAmountInDecimal, tokenAmountInDecimal, account, presaleContract);
+
+          dispatch(updateBlockNumber({ chainId: chainId || ChainId.MAINNET, blockNumber: parseInt(txHash.blockNumber) }))
+          return txHash
         } catch (error) {
           console.error('purchaseWithBNB', pantyAmountInDecimal, tokenAmountInDecimal, account, error)
+          return ''
         }
       } else {
-        await purchaseWithyPANTY(pantyAmountInDecimal, account);
+        try {
+          const txHash = await purchaseWithyPANTY(pantyAmountInDecimal, account, presaleContract);
+          dispatch(updateBlockNumber({ chainId: chainId || ChainId.MAINNET, blockNumber: parseInt(txHash.blockNumber) }))
+          return txHash
+        } catch (error) {
+          console.error('purchaseWithyPANTY', pantyAmountInDecimal, tokenAmountInDecimal, account, error)
+          return ''
+        }
       }
     },
-    [account],
+    [account, presaleContract, dispatch, chainId],
   )
 
   return { onPurchase: handlePurchase }

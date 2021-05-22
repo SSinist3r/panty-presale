@@ -221,7 +221,7 @@ contract PantySale {
     //function to withdraw collected tokens by sale.
     //only owner can call this function
 
-    function withdrawCollectedTokens() public payable {
+    function withdrawCollectedTokens() public {
         require(msg.sender == owner);
         owner.transfer(address(this).balance);
         BNB.transfer(owner, BNB.balanceOf(address(this)));

@@ -18,7 +18,7 @@ export function useActiveWeb3React(): Web3ReactContextInterface<Web3Provider> & 
 export function useEagerConnect() {
   const { activate, active } = useWeb3ReactCore() // specifically using useWeb3ReactCore because of what this hook does
   const [tried, setTried] = useState(false)
-
+  
   useEffect(() => {
     injected.isAuthorized().then((isAuthorized) => {
       const hasSignedIn = window.localStorage.getItem(connectorLocalStorageKey)

@@ -1,13 +1,14 @@
 import { Token } from '@pancakeswap-libs/sdk'
+import { GOVERN_TOKEN } from '../../constants'
 import { isAddress } from '../../utils'
 
 export function filterTokens(tokens: Token[], search: string): Token[] {
-  if (search.length === 0) return tokens
+  if (search.length === 0) return tokens.filter((token => token.address !== GOVERN_TOKEN))
 
   const searchingAddress = isAddress(search)
 
   if (searchingAddress) {
-    return tokens.filter((token) => token.address === searchingAddress)
+    return tokens.filter((token) => token.address === searchingAddress && token.address !== GOVERN_TOKEN)
   }
 
   const lowerSearchParts = search
@@ -16,7 +17,7 @@ export function filterTokens(tokens: Token[], search: string): Token[] {
     .filter((s) => s.length > 0)
 
   if (lowerSearchParts.length === 0) {
-    return tokens
+    return tokens.filter((token => token.address !== GOVERN_TOKEN))
   }
 
   const matchesSearch = (s: string): boolean => {
@@ -31,7 +32,7 @@ export function filterTokens(tokens: Token[], search: string): Token[] {
   return tokens.filter((token) => {
     const { symbol, name } = token
 
-    return (symbol && matchesSearch(symbol)) || (name && matchesSearch(name))
+    return ((symbol && matchesSearch(symbol)) || (name && matchesSearch(name))) && token.address !== GOVERN_TOKEN
   })
 }
 

@@ -4,7 +4,8 @@ import { Provider } from 'react-redux'
 import { ModalProvider } from '@pancakeswap-libs/uikit'
 import { NetworkContextName } from './constants'
 import store from './state'
-import getLibrary from './utils/getLibrary'
+// import getLibrary from './utils/getLibrary'
+import { getLibrary } from './utils/web3React'
 import { ThemeContextProvider } from './ThemeContext'
 
 const Web3ProviderNetwork = createWeb3ReactRoot(NetworkContextName)

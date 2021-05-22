@@ -4,15 +4,18 @@ import { ParsedQs } from 'qs'
 import { useCallback, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useGetPANTYAmount, useGetTokenAmount } from 'hooks/useGetSaleData'
+import { useCurrency } from 'hooks/Tokens'
+import useTokenBalance from 'hooks/useTokenBalance'
+import BigNumber from 'bignumber.js'
 
 import { useActiveWeb3React } from '../../hooks'
-import { useCurrency } from '../../hooks/Tokens'
 import useParsedQueryString from '../../hooks/useParsedQueryString'
 import { isAddress } from '../../utils'
 import { AppDispatch, AppState } from '../index'
-import { useCurrencyBalances } from '../wallet/hooks'
 import { Field, replaceSwapState, selectCurrency, setRecipient, switchCurrencies, typeInput } from './actions'
 import { SwapState } from './reducer'
+import { BIG_TEN, GOVERN_TOKEN } from '../../constants'
+
 
 export function useSwapState(): AppState['swap'] {
   return useSelector<AppState, AppState['swap']>((state) => state.swap)
@@ -69,7 +72,8 @@ export function tryParseAmount(value?: string, currency?: Currency): CurrencyAmo
     return undefined
   }
   try {
-    const typedValueParsed = parseUnits(value, currency.decimals).toString()
+    const typedValueParsed = parseUnits(value, currency.decimals ?? 18).toString()
+    
     if (typedValueParsed !== '0') {
       return currency instanceof Token
         ? new TokenAmount(currency, JSBI.BigInt(typedValueParsed))
@@ -104,8 +108,8 @@ function involvesAddress(trade: Trade, checksummedAddress: string): boolean {
 // from the current swap inputs, compute the best trade and return it.
 export function useDerivedSwapInfo(): {
   currencies: { [field in Field]?: Currency }
-  currencyBalances: { [field in Field]?: CurrencyAmount }
-  parsedAmounts: { [field in Field]?: CurrencyAmount }
+  currencyBalances: { [field in Field]?: BigNumber }
+  parsedAmounts: { [field in Field]?: BigNumber }
   inputError?: string
 } {
   const { account } = useActiveWeb3React()
@@ -116,18 +120,21 @@ export function useDerivedSwapInfo(): {
     [Field.INPUT]: { currencyId: inputCurrencyId },
     [Field.OUTPUT]: { currencyId: outputCurrencyId }
   } = useSwapState()
-  
+    
   const inputCurrency = useCurrency(inputCurrencyId)
   const outputCurrency = useCurrency(outputCurrencyId)
-  
-  const relevantTokenBalances = useCurrencyBalances(account ?? undefined, [
-    inputCurrency ?? undefined,
-    outputCurrency ?? undefined,
-  ])
+ 
+  const inputTokenBalance = useTokenBalance(inputCurrencyId || '')
+  const outputTokenBalance = useTokenBalance(outputCurrencyId || '')
+  console.log(outputCurrencyId, outputTokenBalance.toString())
+
+  // Div input & output balance to decimals
+  const inputParseAmount = inputTokenBalance.div(BIG_TEN.pow(inputCurrency.decimals))
+  const outputParseAmount = outputTokenBalance.div(BIG_TEN.pow(outputCurrency.decimals))
 
   const currencyBalances = {
-    [Field.INPUT]: relevantTokenBalances[0],
-    [Field.OUTPUT]: relevantTokenBalances[1],
+    [Field.INPUT]: inputParseAmount,
+    [Field.OUTPUT]: outputParseAmount,
   }
   
   const currencies: { [field in Field]?: Currency } = {
@@ -138,18 +145,19 @@ export function useDerivedSwapInfo(): {
   const pantyAmount = useGetPANTYAmount(typedValue, inputCurrency?.symbol || "BNB")
   const tokenAmount = useGetTokenAmount(typedValue, inputCurrency?.symbol || "BNB")
 
-  const parsedAmounts: { [field in Field]?: CurrencyAmount } = {
-    [Field.INPUT]: tryParseAmount(independentField === Field.INPUT ? typedValue : tokenAmount, inputCurrency ?? undefined),
-    [Field.OUTPUT]: tryParseAmount(independentField === Field.INPUT ? pantyAmount : typedValue, outputCurrency ?? undefined)
+  const parsedAmounts: { [field in Field]?: BigNumber } = {
+    [Field.INPUT]: independentField === Field.INPUT ? new BigNumber(typedValue) : new BigNumber(tokenAmount || '0'),
+    [Field.OUTPUT]: independentField === Field.INPUT ? new BigNumber(pantyAmount || '0') : new BigNumber(typedValue) 
   }
-    
+  if (parsedAmounts[Field.INPUT]?.isNaN()) parsedAmounts[Field.INPUT] = new BigNumber(0)
+  if (parsedAmounts[Field.OUTPUT]?.isNaN()) parsedAmounts[Field.OUTPUT] = new BigNumber(0)
 
   let inputError: string | undefined
   if (!account) {
     inputError = 'Connect Wallet'
   }
 
-  if (!parsedAmounts[Field.INPUT] || !parsedAmounts[Field.OUTPUT]) {
+  if (!parsedAmounts[Field.INPUT] || parsedAmounts[Field.INPUT]?.isZero() || !parsedAmounts[Field.OUTPUT] || parsedAmounts[Field.OUTPUT]?.isZero()) {
     inputError = inputError ?? 'Enter an amount'
   }
 
@@ -163,8 +171,8 @@ export function useDerivedSwapInfo(): {
     parsedAmounts[Field.INPUT]
   ]
   
-  if (balanceIn && amountIn && balanceIn.lessThan(amountIn)) {
-    inputError = `Insufficient ${amountIn.currency.symbol} balance`
+  if (balanceIn && amountIn && balanceIn.lt(amountIn)) {
+    inputError = `Insufficient ${inputCurrency.symbol} balance`
   }
 
   return {
@@ -207,7 +215,7 @@ function validatedRecipient(recipient: any): string | null {
 
 export function queryParametersToSwapState(parsedQs: ParsedQs): SwapState {
   const inputCurrencyId = 'BNB'
-  const outputCurrencyId = '0xc00Df7211C1A62ca081D1b1DeaC8b45a95A1feeC'
+  const outputCurrencyId = GOVERN_TOKEN
 
   let inputCurrency = parseCurrencyFromURLParameter(inputCurrencyId)
   let outputCurrency = parseCurrencyFromURLParameter(outputCurrencyId)

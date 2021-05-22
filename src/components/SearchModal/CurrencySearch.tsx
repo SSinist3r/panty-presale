@@ -44,7 +44,6 @@ export function CurrencySearch({
   isOpen,
   onChangeList,
 }: CurrencySearchProps) {
-  const { t } = useTranslation()
   const { chainId } = useActiveWeb3React()
   const theme = useContext(ThemeContext)
 

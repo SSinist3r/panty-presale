@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
+import { getWeb3NoAccount } from 'utils/web3'
 import { useActiveWeb3React } from '../../hooks'
 import useDebounce from '../../hooks/useDebounce'
 import useIsWindowVisible from '../../hooks/useIsWindowVisible'
@@ -8,6 +9,7 @@ import { updateBlockNumber } from './actions'
 export default function Updater(): null {
   const { library, chainId } = useActiveWeb3React()
   const dispatch = useDispatch()
+  const web3 = getWeb3NoAccount()
 
   const windowVisible = useIsWindowVisible()
 
@@ -35,16 +37,20 @@ export default function Updater(): null {
 
     setState({ chainId, blockNumber: null })
 
-    library
-      .getBlockNumber()
+    web3.eth.getBlockNumber()
       .then(blockNumberCallback)
       .catch((error) => console.error(`Failed to get block number for chainId: ${chainId}`, error))
 
-    library.on('block', blockNumberCallback)
+    // library
+    //   .getBlockNumber()
+    //   .then(blockNumberCallback)
+    //   .catch((error) => console.error(`Failed to get block number for chainId: ${chainId}`, error))
+
+    // library.on('block', blockNumberCallback)
     return () => {
-      library.removeListener('block', blockNumberCallback)
+      // library.removeListener('block', blockNumberCallback)
     }
-  }, [dispatch, chainId, library, blockNumberCallback, windowVisible])
+  }, [dispatch, chainId, library, blockNumberCallback, windowVisible, web3])
 
   const debouncedState = useDebounce(state, 100)
 

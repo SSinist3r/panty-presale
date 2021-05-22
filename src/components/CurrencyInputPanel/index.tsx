@@ -4,13 +4,15 @@ import { Button, ChevronDownIcon, Text } from '@pancakeswap-libs/uikit'
 import styled from 'styled-components'
 import { darken } from 'polished'
 import useI18n from 'hooks/useI18n'
-import { useCurrencyBalance } from '../../state/wallet/hooks'
+import BigNumber from 'bignumber.js'
+import { useBalanceFromCurrencySymbol } from 'hooks/useTokenBalance'
 import CurrencySearchModal from '../SearchModal/CurrencySearchModal'
 import CurrencyLogo from '../CurrencyLogo'
 import DoubleCurrencyLogo from '../DoubleLogo'
 import { RowBetween } from '../Row'
 import { Input as NumericalInput } from '../NumericalInput'
 import { useActiveWeb3React } from '../../hooks'
+
 
 const InputRow = styled.div<{ selected: boolean }>`
   display: flex;
@@ -75,6 +77,7 @@ interface CurrencyInputPanelProps {
   label?: string
   onCurrencySelect?: (currency: Currency) => void
   currency?: Currency | null
+  currencyAmount: BigNumber | undefined
   disableCurrencySelect?: boolean
   hideBalance?: boolean
   pair?: Pair | null
@@ -91,6 +94,7 @@ export default function CurrencyInputPanel({
   label,
   onCurrencySelect,
   currency,
+  currencyAmount,
   disableCurrencySelect = false,
   hideBalance = false,
   pair = null, // used for double token logo
@@ -101,7 +105,7 @@ export default function CurrencyInputPanel({
 }: CurrencyInputPanelProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const { account } = useActiveWeb3React()
-  const selectedCurrencyBalance = useCurrencyBalance(account ?? undefined, currency ?? undefined)
+  
   const TranslateString = useI18n()
   const translatedLabel = label || TranslateString(132, 'Input')
   const handleDismissSearch = useCallback(() => {
@@ -116,8 +120,8 @@ export default function CurrencyInputPanel({
               <Text fontSize="14px">{translatedLabel}</Text>
               {account && (
                 <Text onClick={onMax} fontSize="14px" style={{ display: 'inline', cursor: 'pointer' }}>
-                  {!hideBalance && !!currency && selectedCurrencyBalance
-                    ? `Balance: ${selectedCurrencyBalance?.toSignificant(6)}`
+                  {!hideBalance && !!currency && currencyAmount
+                    ? `Balance: ${currencyAmount.toFixed(6)}`
                     : ''}
                 </Text>
               )}

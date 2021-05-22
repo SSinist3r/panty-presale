@@ -1,6 +1,7 @@
 import { parseBytes32String } from '@ethersproject/strings'
 import { Currency, ETHER, Token, currencyEquals } from '@pancakeswap-libs/sdk'
 import { useMemo } from 'react'
+
 import { useSelectedTokenList } from '../state/lists/hooks'
 import { NEVER_RELOAD, useSingleCallResult } from '../state/multicall/hooks'
 // eslint-disable-next-line import/no-cycle
@@ -45,8 +46,8 @@ function parseStringOrBytes32(str: string | undefined, bytes32: string | undefin
   return str && str.length > 0
     ? str
     : bytes32 && BYTES32_REGEX.test(bytes32)
-    ? parseBytes32String(bytes32)
-    : defaultValue
+      ? parseBytes32String(bytes32)
+      : defaultValue
 }
 
 // undefined if invalid or does not exist
@@ -102,8 +103,13 @@ export function useToken(tokenAddress?: string): Token | undefined | null {
   ])
 }
 
-export function useCurrency(currencyId: string | undefined): Currency | null | undefined {
-  const isBNB = currencyId?.toUpperCase() === 'BNB'
-  const token = useToken(isBNB ? undefined : currencyId)
-  return isBNB ? ETHER : token
+export function useCurrency(currencyId: string | undefined): Currency {
+  const allTokens = useAllTokens()
+  const keys = Object.keys(allTokens).filter(key => allTokens[key].address === currencyId)
+
+  if (keys.length > 0) {
+    return { decimals: allTokens[keys[0]].decimals, symbol: allTokens[keys[0]].symbol, name: allTokens[keys[0]].name } as Currency
+  }
+
+  return ETHER
 }

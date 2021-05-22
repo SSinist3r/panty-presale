@@ -10,8 +10,8 @@ import Container from 'components/Container'
 
 import { useActiveWeb3React } from 'hooks'
 import { Field } from 'state/swap/actions'
-import { useDefaultsFromURLSearch, useDerivedSwapInfo, useSwapActionHandlers, useSwapState } from 'state/swap/hooks'
-import { useExpertModeManager } from 'state/user/hooks'
+import { tryParseAmount, useDefaultsFromURLSearch, useDerivedSwapInfo, useSwapActionHandlers, useSwapState } from 'state/swap/hooks'
+import BigNumber from 'bignumber.js'
 import { maxAmountSpend } from 'utils/maxAmountSpend'
 import useI18n from 'hooks/useI18n'
 import { ApprovalState, useApproveCallback } from 'hooks/useApproveCallback'
@@ -19,38 +19,47 @@ import { usePANTYPurchase } from 'hooks/useGetSaleData'
 import { getPresaleContractAddress } from 'utils/addressHelpers'
 import PageHeader from 'components/PageHeader'
 import ConnectWalletButton from 'components/ConnectWalletButton'
+import { BIG_ZERO, BIG_TEN } from 'utils/bigNumber'
 
 import AppBody from '../AppBody'
-import { Dots } from '../Pool/styleds'
 
+
+const Dots = styled.span`
+  &::after {
+    display: inline-block;
+    animation: ellipsis 1.25s infinite;
+    content: '.';
+    width: 1em;
+    text-align: left;
+  }
+  @keyframes ellipsis {
+    0% {
+      content: '.';
+    }
+    33% {
+      content: '..';
+    }
+    66% {
+      content: '...';
+    }
+  }
+`
 
 const Presale = () => {
-  const loadedUrlParams = useDefaultsFromURLSearch()
+  useDefaultsFromURLSearch()
   const TranslateString = useI18n()
-
-  const [disableSwap, setDisableSwap] = useState(false)
-  const [hasPoppedModal, setHasPoppedModal] = useState(false)
-  const [interruptRedirectCountdown, setInterruptRedirectCountdown] = useState(false)
-
-  const [transactionWarning, setTransactionWarning] = useState<{
-    selectedToken: string | null
-    purchaseType: string | null
-  }>({
-    selectedToken: null,
-    purchaseType: null,
-  })
-
   const { account } = useActiveWeb3React()
-  const theme = useContext(ThemeContext)
-
-  const [isExpertMode] = useExpertModeManager()
 
   // swap state
-  const { independentField, typedValue, recipient } = useSwapState()
+  const { independentField, typedValue } = useSwapState()
   const { currencyBalances, parsedAmounts, currencies, inputError: swapInputError } = useDerivedSwapInfo()
 
-  const [approvalInput, approveInputCallback] = useApproveCallback(parsedAmounts[Field.INPUT], getPresaleContractAddress())
-  const { onCurrencySelection, onUserInput, onChangeRecipient } = useSwapActionHandlers()
+  const inputCurrencyAmount = tryParseAmount(
+    parsedAmounts[Field.INPUT]?.multipliedBy(BIG_TEN.pow(currencies[Field.INPUT]?.decimals ?? 18)).toString(),
+    currencies[Field.INPUT])
+  const [approvalInput, approveInputCallback] = useApproveCallback(inputCurrencyAmount, getPresaleContractAddress())
+
+  const { onCurrencySelection, onUserInput } = useSwapActionHandlers()
   const isValid = !swapInputError
   const dependentField: Field = independentField === Field.INPUT ? Field.OUTPUT : Field.INPUT
 
@@ -67,50 +76,19 @@ const Presale = () => {
     [onUserInput]
   )
 
-  // modal and loading
-  const [{ showConfirm, tradeToConfirm, swapErrorMessage, attemptingTxn, txHash }, setSwapState] = useState<{
-    showConfirm: boolean
-    tradeToConfirm: Trade | undefined
-    attemptingTxn: boolean
-    swapErrorMessage: string | undefined
-    txHash: string | undefined
-  }>({
-    showConfirm: false,
-    tradeToConfirm: undefined,
-    attemptingTxn: false,
-    swapErrorMessage: undefined,
-    txHash: undefined,
-  })
-
   const formattedAmounts = {
     [independentField]: typedValue,
-    [dependentField]: parsedAmounts[dependentField]?.toExact() ?? '',
+    [dependentField]: parsedAmounts[dependentField]?.toString() || '',
   }
 
   // check if user has gone through approval process, used to show two step buttons, reset on token change
   const [approvalSubmitted, setApprovalSubmitted] = useState<boolean>(false)
 
-  const maxAmountInput: CurrencyAmount | undefined = maxAmountSpend(currencyBalances[Field.INPUT])
-  const atMaxAmountInput = Boolean(maxAmountInput && parsedAmounts[Field.INPUT]?.equalTo(maxAmountInput))
-
-  // This will check to see if the user has selected Syrup or SafeMoon to either buy or sell.
-  // If so, they will be alerted with a warning message.
-  const checkForWarning = useCallback(
-    (selected: string, purchaseType: string) => {
-      if (['SYRUP', 'SAFEMOON'].includes(selected)) {
-        setTransactionWarning({
-          selectedToken: selected,
-          purchaseType,
-        })
-      }
-    },
-    [setTransactionWarning]
-  )
+  const maxAmountInput: BigNumber = currencyBalances[Field.INPUT] ?? BIG_ZERO
+  const atMaxAmountInput = Boolean(maxAmountInput && parsedAmounts[Field.INPUT]?.isGreaterThanOrEqualTo(maxAmountInput))
 
   const handleInputSelect = useCallback(
     (inputCurrency) => {
-      setHasPoppedModal(false)
-      setInterruptRedirectCountdown(false)
       setApprovalSubmitted(false) // reset 2 step UI for approvals
       onCurrencySelection(Field.INPUT, inputCurrency)
     },
@@ -119,23 +97,15 @@ const Presale = () => {
 
   const handleMaxInput = useCallback(() => {
     if (maxAmountInput) {
-      onUserInput(Field.INPUT, maxAmountInput.toExact())
+      onUserInput(Field.INPUT, maxAmountInput.toFixed(6))
     }
   }, [maxAmountInput, onUserInput])
 
   const handleOutputSelect = useCallback(
     (outputCurrency) => {
-      setHasPoppedModal(false)
-      setInterruptRedirectCountdown(false)
       onCurrencySelection(Field.OUTPUT, outputCurrency)
-      if (outputCurrency.symbol === 'SYRUP') {
-        checkForWarning(outputCurrency.symbol, 'Buying')
-      }
-      if (outputCurrency.symbol === 'SAFEMOON') {
-        checkForWarning(outputCurrency.symbol, 'Buying')
-      }
     },
-    [onCurrencySelection, checkForWarning]
+    [onCurrencySelection]
   )
 
   const { onPurchase } = usePANTYPurchase()
@@ -155,6 +125,7 @@ const Presale = () => {
                 value={formattedAmounts[Field.INPUT]}
                 showMaxButton={!atMaxAmountInput}
                 currency={currencies[Field.INPUT]}
+                currencyAmount={currencyBalances[Field.INPUT]}
                 onUserInput={handleTypeInput}
                 onMax={handleMaxInput}
                 onCurrencySelect={handleInputSelect}
@@ -162,7 +133,7 @@ const Presale = () => {
                 id="swap-currency-input"
               />
               <AutoColumn justify="space-between">
-                <AutoRow justify={isExpertMode ? 'space-between' : 'center'} style={{ padding: '0 1rem' }}>
+                <AutoRow justify='center' style={{ padding: '0 1rem' }}>
                   <ArrowWrapper clickable>
                     <IconButton
                       variant="tertiary"
@@ -181,6 +152,7 @@ const Presale = () => {
                 showMaxButton={false}
                 disableCurrencySelect
                 currency={currencies[Field.OUTPUT]}
+                currencyAmount={currencyBalances[Field.OUTPUT]}
                 onCurrencySelect={handleOutputSelect}
                 otherCurrency={currencies[Field.INPUT]}
                 id="swap-currency-output"
@@ -190,11 +162,20 @@ const Presale = () => {
 
               {!account ? (
                 <ConnectWalletButton width="100%" />
+              ) : swapInputError ? (
+                <Button
+                  id="swap-button"
+                  disabled
+                  variant='primary'
+                  width="100%"
+                >
+                  {swapInputError}
+                </Button>
               ) : approvalInput !== ApprovalState.APPROVED ? (
                 <Button
                   onClick={approveInputCallback}
                   id="approve-button"
-                  disabled={disableSwap || !isValid || approvalInput === ApprovalState.PENDING}
+                  disabled={!isValid || approvalInput === ApprovalState.PENDING}
                   variant='primary'
                   width="100%"
                 >
@@ -207,10 +188,15 @@ const Presale = () => {
               ) : (
                 <Button
                   onClick={() => {
-                    onPurchase(formattedAmounts[Field.OUTPUT].toString(), formattedAmounts[Field.INPUT].toString(), currencies[Field.INPUT]?.symbol);
+                    onPurchase(formattedAmounts[Field.OUTPUT].toString(),
+                      formattedAmounts[Field.INPUT].toString() || '', currencies[Field.INPUT]?.symbol)
+                      .then(tx => {
+                        console.log(tx)
+                        onUserInput(Field.INPUT, '0')
+                      });
                   }}
                   id="swap-button"
-                  disabled={disableSwap || !isValid}
+                  disabled={!isValid}
                   variant='primary'
                   width="100%"
                 >
@@ -219,8 +205,6 @@ const Presale = () => {
                     : `Purchase`}
                 </Button>
               )}
-
-              {isExpertMode && swapErrorMessage ? <SwapCallbackError error={swapErrorMessage} /> : null}
             </BottomGrouping>
           </CardBody>
         </Wrapper>

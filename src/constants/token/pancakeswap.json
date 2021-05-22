@@ -15,7 +15,15 @@
             "address": "0xc00Df7211C1A62ca081D1b1DeaC8b45a95A1feeC",
             "chainId": 97,
             "decimals": 18,
-            "logoURI": "https://presale.pantyswap.finance/images/coins/0x70e5FF10Df63539bc347734a9dAf8D447164A36e.png"
+            "logoURI": "https://presale.pantyswap.finance/images/coins/0xc00Df7211C1A62ca081D1b1DeaC8b45a95A1feeC.png"
+        },
+        {
+            "name": "Panty Token",
+            "symbol": "PANTY",
+            "address": "0x6A8d8f3c224Cd16D7B143930Fb428fAF20E9802B",
+            "chainId": 56,
+            "decimals": 18,
+            "logoURI": "https://presale.pantyswap.finance/images/coins/0x6A8d8f3c224Cd16D7B143930Fb428fAF20E9802B.png"
         },
         {
             "name": "YieldPanty Finance",
@@ -32,22 +40,6 @@
             "chainId": 56,
             "decimals": 8,
             "logoURI": "https://presale.pantyswap.finance/images/coins/0x70e5FF10Df63539bc347734a9dAf8D447164A36e.png"
-        },
-        {
-            "name": "WBNB Token",
-            "symbol": "WBNB",
-            "address": "0xae13d989dac2f0debff460ac112a837c89baa7cd",
-            "chainId": 97,
-            "decimals": 18,
-            "logoURI": "https://presale.pantyswap.finance/images/coins/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png"
-        },
-        {
-            "name": "WBNB Token",
-            "symbol": "WBNB",
-            "address": "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
-            "chainId": 56,
-            "decimals": 18,
-            "logoURI": "https://presale.pantyswap.finance/images/coins/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c.png"
         }
     ]
 }

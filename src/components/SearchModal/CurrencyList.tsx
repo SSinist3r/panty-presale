@@ -3,10 +3,12 @@ import React, { CSSProperties, MutableRefObject, useCallback, useMemo } from 're
 import { FixedSizeList } from 'react-window'
 import styled from 'styled-components'
 import { Text } from '@pancakeswap-libs/uikit'
+
+import { tryParseAmount } from 'state/swap/hooks'
+import { useBalanceFromCurrencySymbol } from 'hooks/useTokenBalance'
 import { useActiveWeb3React } from '../../hooks'
 import { useSelectedTokenList, WrappedTokenInfo } from '../../state/lists/hooks'
 import { useAddUserToken, useRemoveUserAddedToken } from '../../state/user/hooks'
-import { useCurrencyBalance } from '../../state/wallet/hooks'
 import { LinkStyledButton } from '../Shared'
 import { useIsUserAddedToken } from '../../hooks/Tokens'
 import Column from '../Column'
@@ -16,6 +18,8 @@ import { MouseoverTooltip } from '../Tooltip'
 import { FadedSpan, MenuItem } from './styleds'
 import Loader from '../Loader'
 import { isTokenOnList } from '../../utils'
+
+
 
 function currencyKey(currency: Currency): string {
   return currency instanceof Token ? currency.address : currency === ETHER ? 'ETHER' : ''
@@ -98,7 +102,8 @@ function CurrencyRow({
   const selectedTokenList = useSelectedTokenList()
   const isOnSelectedList = isTokenOnList(selectedTokenList, currency)
   const customAdded = useIsUserAddedToken(currency)
-  const balance = useCurrencyBalance(account ?? undefined, currency)
+  const balance = useBalanceFromCurrencySymbol(currency.symbol)
+  const balanceParsedAmount = tryParseAmount(balance.toString(), currency)
 
   const removeToken = useRemoveUserAddedToken()
   const addToken = useAddUserToken()
@@ -146,7 +151,7 @@ function CurrencyRow({
       </Column>
       <TokenTags currency={currency} />
       <RowFixed style={{ justifySelf: 'flex-end' }}>
-        {balance ? <Balance balance={balance} /> : account ? <Loader /> : null}
+        {balanceParsedAmount ? <Balance balance={balanceParsedAmount} /> : account ? <Loader /> : null}
       </RowFixed>
     </MenuItem>
   )

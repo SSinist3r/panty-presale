@@ -11,15 +11,16 @@ import WETH_ABI from '../constants/abis/weth.json'
 import { MULTICALL_ABI, MULTICALL_NETWORKS } from '../constants/multicall'
 import { getContract } from '../utils'
 import { useActiveWeb3React } from './index'
-import { PRESALE_CONTRACT_ADDRESS } from '../constants'
 
 // returns null on errors
 function useContract(address: string | undefined, ABI: any, withSignerIfPossible = true): Contract | null {
+  
   const { library, account } = useActiveWeb3React()
 
   return useMemo(() => {
     if (!address || !ABI || !library) return null
     try {
+      // return getContract(address, ABI, library, withSignerIfPossible && account ? account : undefined)
       return getContract(address, ABI, library, withSignerIfPossible && account ? account : undefined)
     } catch (error) {
       console.error('Failed to get contract', error)
@@ -30,11 +31,6 @@ function useContract(address: string | undefined, ABI: any, withSignerIfPossible
 
 export function useTokenContract(tokenAddress?: string, withSignerIfPossible?: boolean): Contract | null {
   return useContract(tokenAddress, ERC20_ABI, withSignerIfPossible)
-}
-
-export function usePresaleContract(withSignerIfPossible?: boolean): Contract | null {
-  const { chainId } = useActiveWeb3React()
-  return useContract(chainId ? PRESALE_CONTRACT_ADDRESS[chainId] : undefined, PRESALE_ABI, withSignerIfPossible)
 }
 
 export function useWETHContract(withSignerIfPossible?: boolean): Contract | null {

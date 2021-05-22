@@ -39,13 +39,13 @@ const PageHeader = ({ title, description, children }: PageHeaderProps) => {
         {/* <IconButton variant="text" onClick={onPresentSettings} title={TranslateString(1200, 'Settings')}>
           <TuneIcon width="24px" color="currentColor" />
         </IconButton> */}
-        <IconButton
+        {/* <IconButton
           variant="text"
           onClick={onPresentRecentTransactions}
           title={TranslateString(1202, 'Recent transactions')}
         >
           <HistoryIcon width="24px" color="currentColor" />
-        </IconButton>
+        </IconButton> */}
       </Flex>
       {children && <Text mt="16px">{children}</Text>}
     </StyledPageHeader>
