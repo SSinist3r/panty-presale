@@ -20,7 +20,7 @@ const getContract = (abi: any, address: string, web3?: Web3) => {
 export const getPresaleContract = (web3?: Web3) => {
   const mainNetChainId = 56
   const chainId = process.env.REACT_APP_CHAIN_ID || mainNetChainId
-console.log(chainId)
+
   return getContract(presaleAbi, PRESALE_CONTRACT_ADDRESS[chainId] ? PRESALE_CONTRACT_ADDRESS[chainId] : PRESALE_CONTRACT_ADDRESS[mainNetChainId], web3)
 }
 

@@ -16,7 +16,6 @@ const useTokenBalance = (tokenAddress: string) => {
 
   useEffect(() => {
     const fetchBalance = async () => {
-      console.log("tokenAddress ", tokenAddress)
       if (tokenAddress && tokenAddress.toUpperCase() !== "BNB" && tokenAddress.toUpperCase() !== "WBNB") {
         const contract = getBep20Contract(tokenAddress, web3)
         const res = await contract.methods.balanceOf(account).call()

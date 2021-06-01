@@ -9,20 +9,20 @@ import { ArrowWrapper, BottomGrouping, SwapCallbackError, Wrapper } from 'compon
 import Container from 'components/Container'
 
 import { useActiveWeb3React } from 'hooks'
+import { useGetSaleInformation, usePANTYPurchase } from 'hooks/useGetSaleData'
 import { Field } from 'state/swap/actions'
 import { tryParseAmount, useDefaultsFromURLSearch, useDerivedSwapInfo, useSwapActionHandlers, useSwapState } from 'state/swap/hooks'
 import BigNumber from 'bignumber.js'
 import { maxAmountSpend } from 'utils/maxAmountSpend'
 import useI18n from 'hooks/useI18n'
 import { ApprovalState, useApproveCallback } from 'hooks/useApproveCallback'
-import { usePANTYPurchase } from 'hooks/useGetSaleData'
 import { getPresaleContractAddress } from 'utils/addressHelpers'
 import PageHeader from 'components/PageHeader'
 import ConnectWalletButton from 'components/ConnectWalletButton'
 import { BIG_ZERO, BIG_TEN } from 'utils/bigNumber'
+import CountDownTimer from 'components/CountDownTimer'
 
 import AppBody from '../AppBody'
-
 
 const Dots = styled.span`
   &::after {
@@ -49,6 +49,8 @@ const Presale = () => {
   useDefaultsFromURLSearch()
   const TranslateString = useI18n()
   const { account } = useActiveWeb3React()
+
+  const { startDate, endDate, totalSold, totalToSell } = useGetSaleInformation()
 
   // swap state
   const { independentField, typedValue } = useSwapState()
@@ -112,11 +114,17 @@ const Presale = () => {
 
   return (
     <Container>
+      <Flex mb="7px" alignItems="center" flexDirection="column">
+        <CountDownTimer startEpoch={Number(startDate)} endEpoch={Number(endDate)} />
+      </Flex>
       <AppBody>
         <Wrapper id="swap-page">
           <PageHeader
             title={TranslateString(8, 'Purchase')}
-            description={TranslateString(1192, '$PANTY from $yPANTY or $BNB')}
+            tag1="Fixed Price"
+            description1={TranslateString(1192, '1 BNB = 4800 PANTY')}
+            tag2="Buyout progress"
+            description2={TranslateString(1192, `${totalToSell} PANTY / ${totalSold} PANTY`)}
           />
           <CardBody>
             <AutoColumn gap="md">
@@ -126,6 +134,7 @@ const Presale = () => {
                 showMaxButton={!atMaxAmountInput}
                 currency={currencies[Field.INPUT]}
                 currencyAmount={currencyBalances[Field.INPUT]}
+                disableCurrencySelect
                 onUserInput={handleTypeInput}
                 onMax={handleMaxInput}
                 onCurrencySelect={handleInputSelect}

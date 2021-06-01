@@ -126,7 +126,6 @@ export function useDerivedSwapInfo(): {
  
   const inputTokenBalance = useTokenBalance(inputCurrencyId || '')
   const outputTokenBalance = useTokenBalance(outputCurrencyId || '')
-  console.log(outputCurrencyId, outputTokenBalance.toString())
 
   // Div input & output balance to decimals
   const inputParseAmount = inputTokenBalance.div(BIG_TEN.pow(inputCurrency.decimals))

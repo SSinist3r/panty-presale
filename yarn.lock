@@ -2786,7 +2786,7 @@
 
 "@pancakeswap-libs/uikit@pantyswap/panty-uikit":
   version "0.32.3"
-  resolved "https://codeload.github.com/pantyswap/panty-uikit/tar.gz/c8908460d8710e5a0005586dc59236375436fbdb"
+  resolved "https://codeload.github.com/pantyswap/panty-uikit/tar.gz/137d57fcab899946cc5ea20c306c3f43bf3f07e4"
   dependencies:
     "@popperjs/core" "^2.9.2"
     "@types/lodash" "^4.14.168"

@@ -112,26 +112,20 @@ contract PantySale {
     using SafeMath for uint256;
 
     IBEP20 public PANTY;
-    IBEP20 public yPANTY;
-    IBEP20 public BNB;
 
     address payable public owner;
 
     uint256 public startDate = 1621331210; // Tuesday, 18 May 2021 10:00:00 AM UTC
     uint256 public endDate = 1621504010; // Thursday, 20 May 2021 02:15:00 PM UTC
 
-    uint256 public tokenPrice = 125000000000000000; // $0.125
-    uint256 public totalTokensToSell = 600000 * 10**18; // 600000 PANTY tokens for sell
-    uint256 public BNB_PER_PANTY = 4800 * 10**18; // 1 BNB = 4800 PANTY
-    uint256 public yPANTY_PER_PANTY = 2 * 10**16; // 1 yPANTY = 0.02 PANTY
-    uint256 public yPANTY_MAX_LIMIT = 1500 * 10**18; // Only 1500 yPANTY can be used to purchase PANTY
-
+    uint256 public tokenPrice = 125 * 10**15;                   // $0.125
+    uint256 public totalTokensToSell = 10**24;                  // 1M PANTY tokens for sell
+    uint256 public pantyPerBnb = 48 * 10**20;                    // 1 BNB = 4800 PANTY
     uint256 public totalSold;
 
     bool public saleEnded;
-    bool public claimedUnsoldTokens;
-
-    mapping(address => uint256) public tokensBoughtWithyPANTY;
+    
+    mapping(address => uint256) public pantyPerAddresses;
 
     event tokensBought(address indexed user, uint256 amountSpent, uint256 amountBought, string tokenName, uint256 date);
     event tokensClaimed(address indexed user, uint256 amount, uint256 date);
@@ -147,47 +141,21 @@ contract PantySale {
     }
 
     constructor(
-        address _PANTY,
-        address _yPANTY,
-        address _BNB
+        address _PANTY
     ) public {
         owner = msg.sender;
         PANTY = IBEP20(_PANTY);
-        yPANTY = IBEP20(_yPANTY);
-        BNB = IBEP20(_BNB);
     }
 
     // Function to buy PANTY using BNB token
     function buyWithBNB(uint256 buyAmount) public payable checkSaleRequirements(buyAmount) {
-        uint256 amount = calculateSpendingToken(buyAmount, 'BNB');
-        if (msg.value == 0) {
-            // Pay with WBNB
-            require(BNB.balanceOf(msg.sender) >= amount, 'Insufficient WBNB pay amount');
-            BNB.transferFrom(msg.sender, address(this), amount);
-        } else {
-            // Pay with BNB
-            require(msg.value >= amount, 'Insufficient BNB pay amount');
-        }
+        uint256 amount = calculateBNBAmount(buyAmount);
+        require(msg.value >= amount, 'Insufficient BNB pay amount');
+        
+        pantyPerAddresses[msg.sender] = pantyPerAddresses[msg.sender].add(buyAmount);
         totalSold = totalSold.add(buyAmount);
         PANTY.transfer(msg.sender, buyAmount);
         emit tokensBought(msg.sender, amount, buyAmount, 'BNB', now);
-    }
-
-    // Function to buy PANTY using yPANTY token
-    function buyWithyPANTY(uint256 buyAmount) public checkSaleRequirements(buyAmount) {
-        uint256 boughtAmount = tokensBoughtWithyPANTY[msg.sender].add(buyAmount);
-        require(boughtAmount <= yPANTY_MAX_LIMIT, 'yPANTY purchase amount overflow');
-
-        uint256 amount = calculateSpendingToken(buyAmount, 'yPANTY');
-        require(yPANTY.balanceOf(msg.sender) >= amount.div(10**10), 'yPANTY balance is low than amount');
-
-        tokensBoughtWithyPANTY[msg.sender] = boughtAmount;
-        totalSold = totalSold.add(buyAmount);
-
-        yPANTY.transferFrom(msg.sender, address(this), amount.div(10**10));         // div because yPANTY decimal is 8, but it was calculated as 18 for the convenient with other tokens
-        PANTY.transfer(msg.sender, buyAmount);
-
-        emit tokensBought(msg.sender, amount, buyAmount, 'yPANTY', now);
     }
 
     //function to change the owner
@@ -211,6 +179,20 @@ contract PantySale {
         endDate = _endDate;
     }
 
+    // function to set the total tokens to sell
+    // only owner can call this function
+    function setTotalTokensToSell(uint256 _totalTokensToSell) public {
+        require(msg.sender == owner);
+        totalTokensToSell = _totalTokensToSell;
+    }
+
+    // function to set the total tokens to sell
+    // only owner can call this function
+    function setTokenPricePerBNB(uint256 _pantyPerBnb) public {
+        require(msg.sender == owner);
+        pantyPerBnb = _pantyPerBnb;
+    }
+
     //function to end the sale
     //only owner can call this function
     function endSale() public {
@@ -224,18 +206,15 @@ contract PantySale {
     function withdrawCollectedTokens() public {
         require(msg.sender == owner);
         owner.transfer(address(this).balance);
-        BNB.transfer(owner, BNB.balanceOf(address(this)));
-        yPANTY.transfer(owner, yPANTY.balanceOf(address(this)));
     }
 
     //function to withdraw unsold tokens
     //only owner can call this function
 
     function withdrawUnsoldTokens() public {
-        require(msg.sender == owner && claimedUnsoldTokens == false);
+        require(msg.sender == owner);
         uint256 unsoldTokens = unsoldTokens();
         require(unsoldTokens > 0);
-        claimedUnsoldTokens = true;
         PANTY.transfer(owner, unsoldTokens);
     }
 
@@ -244,27 +223,16 @@ contract PantySale {
         return totalTokensToSell.sub(totalSold);
     }
 
-    //function to calculate the quantity of PANTY token based on the PANTY price of `tokenName` and its `buyAmount`
-    function calculatePANTY(uint256 buyAmount, string memory tokenName) public view returns (uint256) {
-        uint256 Price = getPANTYPrice(tokenName);
-        uint256 totalQty = (Price.mul(buyAmount));
-        return totalQty.div(10**18);
+    //function to calculate the quantity of PANTY token based on the PANTY price of `tokenName` and its `bnbAmount`
+    function calculatePANTYAmount(uint256 bnbAmount) public view returns (uint256) {
+        uint256 pantyAmount = pantyPerBnb.mul(bnbAmount).div(10**18);
+        return pantyAmount;
     }
 
     //function to calculate the quantity of `tokenName` needed using its PANTY price to buy `buyAmount` of PANTY tokens.
-    function calculateSpendingToken(uint256 buyAmount, string memory tokenName) public view returns (uint256) {
-        uint256 Price = getPANTYPrice(tokenName);
-        buyAmount = buyAmount.mul(10**18);
-        uint256 totalQty = buyAmount.div(Price);
-        return totalQty;
-    }
-
-    //function to get the latest PANTY price of `token`
-    function getPANTYPrice(string memory token) public view returns (uint256) {
-        if (keccak256(abi.encodePacked(token)) == keccak256(abi.encodePacked('BNB'))) {
-            return BNB_PER_PANTY;
-        } else {
-            return yPANTY_PER_PANTY;
-        }
+    function calculateBNBAmount(uint256 tokenAmount) public view returns (uint256) {
+        require(pantyPerBnb > 0, "PANTY price per BNB should be greater than 0");
+        uint256 bnbAmount = tokenAmount.mul(10**18).div(pantyPerBnb);
+        return bnbAmount;
     }
 }

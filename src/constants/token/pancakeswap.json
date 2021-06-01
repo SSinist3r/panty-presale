@@ -24,22 +24,6 @@
             "chainId": 56,
             "decimals": 18,
             "logoURI": "https://presale.pantyswap.finance/images/coins/0x6A8d8f3c224Cd16D7B143930Fb428fAF20E9802B.png"
-        },
-        {
-            "name": "YieldPanty Finance",
-            "symbol": "yPANTY",
-            "address": "0xc7Da8a995D9686F85a6609519091Da423167999F",
-            "chainId": 97,
-            "decimals": 8,
-            "logoURI": "https://presale.pantyswap.finance/images/coins/0x70e5FF10Df63539bc347734a9dAf8D447164A36e.png"
-        },
-        {
-            "name": "YieldPanty Finance",
-            "symbol": "yPANTY",
-            "address": "0x90ad5433fb7b70e04244824d825a98ed013477de",
-            "chainId": 56,
-            "decimals": 8,
-            "logoURI": "https://presale.pantyswap.finance/images/coins/0x70e5FF10Df63539bc347734a9dAf8D447164A36e.png"
         }
     ]
 }

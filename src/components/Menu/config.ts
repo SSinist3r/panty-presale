@@ -1,11 +1,11 @@
 import { MenuEntry } from '@pancakeswap-libs/uikit'
 
 const config: MenuEntry[] = [
-  {
-    label: 'Home',
-    icon: 'HomeIcon',
-    href: 'https://pantyswap.yieldpanty.finance/',
-  },
+  // {
+  //   label: 'Home',
+  //   icon: 'HomeIcon',
+  //   href: 'https://pantyswap.yieldpanty.finance/',
+  // },
   {
     label: 'Presale',
     icon: 'TicketIcon',
@@ -15,30 +15,30 @@ const config: MenuEntry[] = [
       color: 'success',
     },
   },
-  {
-    label: 'Trade',
-    icon: 'TradeIcon',
-    items: [
-      {
-        label: 'Exchange',
-        href: 'https://exchange.yieldpanty.finance/#/swap',
-      },
-      {
-        label: 'Liquidity',
-        href: 'https://exchange.yieldpanty.finance/#/pool',
-      },
-    ],
-  },
-  {
-    label: 'Farms',
-    icon: 'FarmIcon',
-    href: 'https://pantyswap.yieldpanty.finance/farms',
-  },
-  {
-    label: 'Pools',
-    icon: 'PoolIcon',
-    href: 'https://pantyswap.yieldpanty.finance/pools',
-  },
+  // {
+  //   label: 'Trade',
+  //   icon: 'TradeIcon',
+  //   items: [
+  //     {
+  //       label: 'Exchange',
+  //       href: 'https://exchange.yieldpanty.finance/#/swap',
+  //     },
+  //     {
+  //       label: 'Liquidity',
+  //       href: 'https://exchange.yieldpanty.finance/#/pool',
+  //     },
+  //   ],
+  // },
+  // {
+  //   label: 'Virgin Farms',
+  //   icon: 'FarmIcon',
+  //   href: 'https://pantyswap.yieldpanty.finance/farms',
+  // },
+  // {
+  //   label: 'Simp Pools',
+  //   icon: 'PoolIcon',
+  //   href: 'https://pantyswap.yieldpanty.finance/pools',
+  // },
   // {
   //   label: 'Prediction',
   //   icon: 'PredictionsIcon',
@@ -48,15 +48,15 @@ const config: MenuEntry[] = [
   //     color: 'warning',
   //   },
   // },
-  {
-    label: 'Lottery',
-    icon: 'TicketIcon',
-    href: 'pantyswap.yieldpanty.finance/lottery',
-    status: {
-      text: 'BETA',
-      color: 'warning',
-    },
-  },
+  // {
+  //   label: 'Lottery',
+  //   icon: 'TicketIcon',
+  //   href: 'pantyswap.yieldpanty.finance/lottery',
+  //   status: {
+  //     text: 'BETA',
+  //     color: 'warning',
+  //   },
+  // },
   // {
   //   label: 'Collectibles',
   //   icon: 'NftIcon',
@@ -128,10 +128,10 @@ const config: MenuEntry[] = [
         label: 'Github',
         href: 'https://github.com/pantyswap',
       },
-      // {
-      //   label: 'Docs',
-      //   href: 'https://docs.pancakeswap.finance',
-      // },
+      {
+        label: 'Docs',
+        href: 'https://pantyswap.gitbook.io/pantyswap/',
+      },
       // {
       //   label: 'Blog',
       //   href: 'https://pancakeswap.medium.com',
