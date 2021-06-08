@@ -126,7 +126,7 @@ const config: MenuEntry[] = [
       // },
       {
         label: 'Github',
-        href: 'https://github.com/pantyswap',
+        href: '#',
       },
       {
         label: 'Docs',
