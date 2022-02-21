@@ -24,10 +24,10 @@ ReactDOM.render(
   <StrictMode>
     <Providers>
       <>
-        {<ListsUpdater />}
-        {<ApplicationUpdater />}
-        {<TransactionUpdater />}
-        {<MulticallUpdater />}
+        <ListsUpdater />
+        <ApplicationUpdater />
+        <TransactionUpdater />
+        <MulticallUpdater />
         <ToastListener />
       </>
       <ResetCSS />
