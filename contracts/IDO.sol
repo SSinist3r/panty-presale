@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.6.0;
 
 library SafeMath {
@@ -115,8 +117,8 @@ contract PantySale {
 
     address payable public owner;
 
-    uint256 public startDate = 1621331210; // Tuesday, 18 May 2021 10:00:00 AM UTC
-    uint256 public endDate = 1621504010; // Thursday, 20 May 2021 02:15:00 PM UTC
+    uint256 public startDate = 1645177610; // Tuesday, 18 May 2021 10:00:00 AM UTC
+    uint256 public endDate = 1866102410; // Thursday, 20 May 2021 02:15:00 PM UTC
 
     uint256 public tokenPrice = 125 * 10**15;                   // $0.125
     uint256 public totalTokensToSell = 10**24;                  // 1M PANTY tokens for sell
@@ -198,6 +200,13 @@ contract PantySale {
     function endSale() public {
         require(msg.sender == owner && saleEnded == false);
         saleEnded = true;
+    }
+
+    //function to start the sale
+    //only owner can call this function
+    function startSale() public {
+        require(msg.sender == owner && saleEnded == true);
+        saleEnded = false;
     }
 
     //function to withdraw collected tokens by sale.
